@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Armónicos en instalaciones eléctricas</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eaf0f4;--panel:#fff;--ink:#14212b;--mute:#5b6b78;--line:#d3dce3;--cur:#d6336c;--fund:#8896a2;--volt:#2b6cb0;--ok:#2f855a;--warn:#b7550f;--bad:#c53030;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a22;--panel:#17252f;--ink:#e6eef3;--mute:#93a5b2;--line:#2b3d49;--cur:#ff6b9a;--fund:#6f8392;--volt:#63b3ff;--ok:#5fd196;--warn:#f0a050;--bad:#ff7b7b;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a22;--panel:#17252f;--ink:#e6eef3;--mute:#93a5b2;--line:#2b3d49;--cur:#ff6b9a;--fund:#6f8392;--volt:#63b3ff;--ok:#5fd196;--warn:#f0a050;--bad:#ff7b7b;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.45 "Barlow Semi Condensed",system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+h1{font-size:1.7rem;font-weight:600;margin:4px 0 2px}
+h2{font-size:1.05rem;font-weight:600;margin:0 0 10px}
+p{margin:0}.mute{color:var(--mute)}
+.grid{display:grid;gap:14px;margin-top:14px;grid-template-columns:1fr}
+@media(min-width:900px){.grid{grid-template-columns:340px 1fr;align-items:start}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+select,button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+button{cursor:pointer}button:hover{border-color:var(--volt)}
+:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
+button.pri{background:var(--volt);border-color:var(--volt);color:#fff;font-weight:500}
+.row select{flex:1;min-width:0}
+.ld{border-top:1px solid var(--line);padding:10px 0 4px}
+.ld:first-child{border-top:0}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.top b{font-weight:600}.top small{display:block;color:var(--mute)}
+.x{min-height:32px;padding:2px 9px}
+.sl{display:flex;align-items:center;gap:10px;margin:6px 0}
+.sl input{flex:1;accent-color:var(--volt);min-width:0}
+.sl output{min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+label.f{display:block;margin:10px 0 2px;color:var(--mute);font-size:.92rem}
+.m{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+@media(min-width:620px){.m{grid-template-columns:repeat(3,1fr)}}
+.k{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--line);border-radius:10px;padding:10px 12px}
+.k span{color:var(--mute);font-size:.9rem}
+.k b{display:block;font-size:1.6rem;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.k small{color:var(--mute)}
+.k.ok{border-left-color:var(--ok)}.k.warn{border-left-color:var(--warn)}.k.bad{border-left-color:var(--bad)}
+canvas{width:100%;display:block}
+.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.hd h2{margin:0}
+.leg{display:flex;gap:12px;color:var(--mute);font-size:.9rem}
+.leg i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:4px;border-radius:2px}
+.seg button{min-height:34px;padding:4px 10px}
+.seg button[aria-pressed="true"]{background:var(--volt);border-color:var(--volt);color:#fff}
+ul.dx{margin:0;padding-left:20px}ul.dx li{margin:6px 0}
+.note{font-size:.88rem;color:var(--mute);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Armónicos en la instalación</h1>
+<p class="mute">Agregá cargas, ajustá la impedancia de la red y mirá cómo se deforman la corriente y la tensión.</p>
+
+<div class="grid">
+<aside>
+  <div class="panel">
+    <h2>Cargas del circuito</h2>
+    <div class="row">
+      <select id="tipo" aria-label="Tipo de carga"></select>
+      <button class="pri" id="add">Agregar</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button data-p="of">Oficina</button><button data-p="com">Local LED</button><button data-p="ind">Planta con variadores</button><button data-p="clr">Vaciar</button>
+    </div>
+    <div id="list" style="margin-top:8px"></div>
+  </div>
+  <div class="panel">
+    <h2>Red y sistema</h2>
+    <label class="f" for="sys">Sistema</label>
+    <select id="sys" style="width:100%"><option value="3">Trifásico 4 hilos (cargas monofásicas repartidas)</option><option value="1">Monofásico</option></select>
+    <label class="f" for="zs">Impedancia de la fuente a 50 Hz</label>
+    <div class="sl"><input id="zs" type="range" min="5" max="300" value="60"><output id="zsv"></output></div>
+    <p class="note">Valores altos: alimentador largo, transformador chico o grupo electrógeno.</p>
+    <label class="f" for="mode">Suma de armónicos entre cargas</label>
+    <select id="mode" style="width:100%"><option value="rss">Cuadrática (cargas con fases distintas)</option><option value="sum">Aritmética (peor caso)</option></select>
+  </div>
+</aside>
+
+<section>
+  <div class="m" id="mets"></div>
+  <div class="panel">
+    <div class="hd"><h2>Corriente de línea</h2><div class="leg"><span><i style="background:var(--cur)"></i>Real</span><span><i style="background:var(--fund)"></i>Fundamental</span></div></div>
+    <canvas id="c1" aria-label="Forma de onda de corriente"></canvas>
+  </div>
+  <div class="panel">
+    <div class="hd"><h2>Tensión en el tablero</h2><div class="leg"><span><i style="background:var(--volt)"></i>Real</span><span><i style="background:var(--fund)"></i>Senoidal ideal</span></div></div>
+    <canvas id="c2" aria-label="Forma de onda de tensión"></canvas>
+  </div>
+  <div class="panel">
+    <div class="hd"><h2>Espectro armónico</h2>
+      <div class="seg row"><button id="s1" aria-pressed="true">Corriente (% de I₁)</button><button id="s2" aria-pressed="false">Tensión (% de V₁)</button></div></div>
+    <canvas id="c3" aria-label="Espectro armónico"></canvas>
+    <p class="note">Naranja: armónicos triples (3, 9, 15, 21), que se suman en el neutro.</p>
+  </div>
+  <div class="panel"><h2>Diagnóstico</h2><ul class="dx" id="dx"></ul>
+    <p class="note">Modelo simplificado con espectros típicos por tipo de carga; los valores reales dependen del equipo. Medí con un analizador de redes antes de decidir.</p></div>
+</section>
+</div>
+</div>
+
+<script>
+const V1=220, N=400, H=[3,5,7,9,11,13,15,17,19,21,23,25];
+const T={
+ res:{n:"Resistiva (estufa, incandescente)",s:{}},
+ mot:{n:"Motor de inducción directo",s:{5:3,7:2}},
+ pc:{n:"Fuentes conmutadas (PC, TV, cargadores)",s:{3:80,5:60,7:40,9:25,11:15,13:10,15:8,17:6,19:4,21:3,23:2,25:2}},
+ led:{n:"Lámparas LED económicas",s:{3:30,5:20,7:12,9:8,11:5,13:3,15:2}},
+ bal:{n:"Balastos electrónicos",s:{3:25,5:12,7:8,9:5,11:3,13:2}},
+ vfd:{n:"Variador 6 pulsos sin reactancia",s:{5:35,7:25,11:8,13:6,17:3,19:2,23:1.5,25:1.2}},
+ ups:{n:"UPS online / rectificador trifásico",s:{5:28,7:18,11:7,13:5,17:3,19:2}},
+ r12:{n:"Rectificador 12 pulsos",s:{11:9,13:7,23:2,25:1.5}}
+};
+const P={
+ of:[["res",20],["pc",35],["led",10],["mot",15]],
+ com:[["led",40],["bal",15],["res",15],["pc",10]],
+ ind:[["mot",40],["vfd",50],["ups",20],["res",10]],
+ clr:[]
+};
+let loads=[],uid=1,view="i",last=null;
+const $=id=>document.getElementById(id);
+const f1=(x,d=1)=>x.toLocaleString("es-AR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const thdT=t=>Math.sqrt(Object.values(T[t].s).reduce((s,v)=>s+v*v,0));
+
+$("tipo").innerHTML=Object.keys(T).map(k=>`<option value="${k}">${T[k].n}</option>`).join("");
+$("add").onclick=()=>{loads.push({id:uid++,t:$("tipo").value,a:20});buildList();update()};
+document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{loads=P[b.dataset.p].map(([t,a])=>({id:uid++,t,a}));buildList();update()});
+["sys","mode"].forEach(i=>$(i).onchange=update);
+$("zs").oninput=update;
+$("s1").onclick=()=>{view="i";update()};$("s2").onclick=()=>{view="v";update()};
+$("list").addEventListener("input",e=>{if(e.target.type=="range"){const l=loads.find(l=>l.id==e.target.dataset.id);l.a=+e.target.value;e.target.nextElementSibling.textContent=l.a+" A";update()}});
+$("list").addEventListener("click",e=>{const d=e.target.closest("[data-del]");if(d){loads=loads.filter(l=>l.id!=d.dataset.del);buildList();update()}});
+
+function buildList(){
+ $("list").innerHTML=loads.map(l=>`<div class="ld"><div class="top"><div><b>${T[l.t].n}</b><small>THDi típica ≈ ${f1(thdT(l.t),0)} %</small></div><button class="x" data-del="${l.id}" aria-label="Quitar carga">✕</button></div><div class="sl"><input type="range" min="0" max="200" value="${l.a}" data-id="${l.id}" aria-label="Corriente fundamental"><output>${l.a} A</output></div></div>`).join("")||`<p class="mute">Sin cargas. Agregá una o elegí un ejemplo.</p>`;
+}
+
+function calc(){
+ const mode=$("mode").value, sys=+$("sys").value, Zs=+$("zs").value/1000;
+ let I1=0;const Ih={};H.forEach(h=>Ih[h]=0);
+ loads.forEach(l=>{I1+=l.a;H.forEach(h=>{const x=l.a*(T[l.t].s[h]||0)/100;Ih[h]=mode=="sum"?Ih[h]+x:Math.hypot(Ih[h],x)})});
+ const sh=Math.sqrt(H.reduce((s,h)=>s+Ih[h]**2,0));
+ const Irms=Math.hypot(I1,sh), thdi=I1?sh/I1*100:0;
+ const Vh={};H.forEach(h=>Vh[h]=h*Zs*Ih[h]);
+ const thdv=Math.sqrt(H.reduce((s,h)=>s+Vh[h]**2,0))/V1*100;
+ const tri=Math.sqrt([3,9,15,21].reduce((s,h)=>s+Ih[h]**2,0));
+ const In=sys==3?3*tri:Irms;
+ const K=Irms?(I1*I1+H.reduce((s,h)=>s+(h*Ih[h])**2,0))/(Irms*Irms):1;
+ const ph=h=>(1-h)*Math.PI/2, iR=[],iF=[],vR=[],vI=[];
+ for(let n=0;n<N;n++){const t=2*Math.PI*n/(N-1);
+  let i=I1*Math.sin(t),v=0;
+  H.forEach(h=>{i+=Ih[h]*Math.sin(h*t+ph(h));v+=h*Zs*Ih[h]*Math.cos(h*t+ph(h))});
+  iR.push(Math.SQRT2*i);iF.push(Math.SQRT2*I1*Math.sin(t));
+  vI.push(Math.SQRT2*V1*Math.sin(t));vR.push(Math.SQRT2*(V1*Math.sin(t)-v));}
+ const pk=Math.max(...iR.map(Math.abs)), cf=Irms?pk/Irms:1.414;
+ return {I1,Ih,Vh,sh,Irms,thdi,thdv,In,K,cf,iR,iF,vR,vI,sys,tri};
+}
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function setup(c,h){const d=window.devicePixelRatio||1,w=c.clientWidth;c.width=w*d;c.height=h*d;const x=c.getContext("2d");x.setTransform(d,0,0,d,0,0);x.font='12px "Barlow Semi Condensed",system-ui,sans-serif';return[x,w,h]}
+function wave(c,real,ideal,col,unit){
+ const [x,w,h]=setup(c,190),pl=46,pr=8,pt=8,pb=22;
+ const m=Math.max(1,...real.map(Math.abs),...ideal.map(Math.abs))*1.1;
+ const X=i=>pl+(w-pl-pr)*i/(N-1),Y=v=>pt+(h-pt-pb)*(.5-v/(2*m));
+ x.strokeStyle=css("--line");x.fillStyle=css("--mute");x.lineWidth=1;
+ [-1,-.5,0,.5,1].forEach(k=>{const y=Y(k*m);x.beginPath();x.moveTo(pl,y);x.lineTo(w-pr,y);x.stroke();x.textAlign="right";x.fillText(Math.round(k*m)+"",pl-6,y+4)});
+ [0,5,10,15,20].forEach(ms=>{const px=X((N-1)*ms/20);x.beginPath();x.moveTo(px,pt);x.lineTo(px,h-pb);x.stroke();x.textAlign="center";x.fillText(ms+" ms",px,h-6)});
+ x.textAlign="left";x.fillText(unit,pl+4,pt+10);
+ const line=(a,c2,lw,dash)=>{x.beginPath();a.forEach((v,i)=>i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v)));x.strokeStyle=c2;x.lineWidth=lw;x.setLineDash(dash);x.stroke();x.setLineDash([])};
+ line(ideal,css("--fund"),1.5,[5,4]);line(real,col,2.4,[]);
+}
+function bars(c,vals,col,unit,lim){
+ const [x,w,h]=setup(c,190),pl=46,pr=8,pt=14,pb=22;
+ const m=Math.max(...vals,lim||0,1)*1.15,bw=(w-pl-pr)/H.length;
+ const Y=v=>pt+(h-pt-pb)*(1-v/m);
+ x.strokeStyle=css("--line");x.fillStyle=css("--mute");x.textAlign="right";
+ for(let k=0;k<=4;k++){const v=m*k/4,y=Y(v);x.beginPath();x.moveTo(pl,y);x.lineTo(w-pr,y);x.stroke();x.fillText(f1(v,v<10?1:0),pl-6,y+4)}
+ x.textAlign="left";x.fillText(unit,pl+4,pt-3);
+ H.forEach((hh,i)=>{const tr=hh%3==0,v=vals[i],x0=pl+i*bw+bw*.18;
+  x.fillStyle=tr?css("--warn"):col;x.fillRect(x0,Y(v),bw*.64,Y(0)-Y(v));
+  x.fillStyle=css("--mute");x.textAlign="center";x.fillText(hh,x0+bw*.32,h-6)});
+ if(lim){x.strokeStyle=css("--bad");x.setLineDash([6,4]);x.lineWidth=1.5;x.beginPath();x.moveTo(pl,Y(lim));x.lineTo(w-pr,Y(lim));x.stroke();x.setLineDash([]);x.fillStyle=css("--bad");x.textAlign="right";x.fillText("límite individual "+lim+" %",w-pr,Y(lim)-4)}
+}
+
+const st=(v,w,b)=>v>b?"bad":v>w?"warn":"ok";
+function update(){
+ $("zsv").textContent=$("zs").value+" mΩ";
+ $("s1").setAttribute("aria-pressed",view=="i");$("s2").setAttribute("aria-pressed",view=="v");
+ const r=last=calc();
+ const mets=[
+  ["THD de corriente",f1(r.thdi)+" %",st(r.thdi,15,30),"ideal < 15 %"],
+  ["THD de tensión",f1(r.thdv)+" %",st(r.thdv,5,8),"límite 8 % (EN 50160)"],
+  ["Corriente RMS",f1(r.Irms)+" A",r.Irms>r.I1*1.1?"warn":"ok","fundamental "+f1(r.I1)+" A"],
+  [r.sys==3?"Corriente de neutro":"Corriente de retorno",f1(r.In)+" A",r.sys==3&&r.In>r.Irms?"bad":"ok",r.sys==3?"fase "+f1(r.Irms)+" A":"igual a la de fase"],
+  ["Factor de cresta",f1(r.cf,2),st(r.cf,1.6,2),"senoidal: 1,41"],
+  ["Factor K",f1(r.K),st(r.K,4,13),"1 = sin armónicos"]
+ ];
+ $("mets").innerHTML=mets.map(m=>`<div class="k ${m[2]}"><span>${m[0]}</span><b>${m[1]}</b><small>${m[3]}</small></div>`).join("");
+ wave($("c1"),r.iR,r.iF,css("--cur"),"A");
+ wave($("c2"),r.vR,r.vI,css("--volt"),"V");
+ if(view=="i")bars($("c3"),H.map(h=>r.I1?r.Ih[h]/r.I1*100:0),css("--cur"),"% de I₁");
+ else bars($("c3"),H.map(h=>r.Vh[h]/V1*100),css("--volt"),"% de V₁",5);
+ diag(r);
+}
+function diag(r){
+ const d=[];
+ if(!loads.length||!r.I1){$("dx").innerHTML="<li>Agregá cargas con corriente mayor a cero para ver el análisis.</li>";return}
+ if(r.thdv>8)d.push(`<b>THD de tensión ${f1(r.thdv)} %, fuera de límite.</b> Puede dañar o hacer actuar mal equipos sensibles. Bajá la impedancia de la fuente (alimentador más corto o de mayor sección, transformador más grande) o filtrá en la carga.`);
+ else if(r.thdv>5)d.push(`THD de tensión ${f1(r.thdv)} %: dentro de la norma pero con poco margen.`);
+ if(r.sys==3&&r.In>r.Irms)d.push(`<b>El neutro lleva más corriente que cada fase</b> (${f1(r.In)} A contra ${f1(r.Irms)} A): los armónicos triples se suman en el neutro. No reduzcas su sección y revisá bornes y temperatura.`);
+ if(r.K>13)d.push(`Factor K ${f1(r.K)}: usá un transformador K-13 o superior, o derateá el estándar.`);
+ else if(r.K>4)d.push(`Factor K ${f1(r.K)}: un transformador estándar se calienta de más; considerá K-4 o derateo.`);
+ if(r.cf>1.7)d.push(`Factor de cresta ${f1(r.cf,2)}: los instrumentos que no sean True RMS leen mal y las protecciones pueden disparar por picos.`);
+ const t5=Math.hypot(r.Ih[5],r.Ih[7]),t3=r.tri;
+ if(t3>t5&&t3>.1*r.I1)d.push("Predominan los armónicos triples (3, 9, 15): conviene filtro de neutro o transformador con secundario en estrella con zigzag.");
+ else if(t5>.15*r.I1)d.push("Predominan el 5.º y 7.º: una reactancia de línea (3–5 %) o un filtro pasivo sintonizado los reduce bastante. Si son muchas cargas, evaluá un filtro activo.");
+ if(!d.length)d.push("Distorsión baja: no se detectan problemas con estos datos.");
+ $("dx").innerHTML=d.map(t=>`<li>${t}</li>`).join("");
+}
+window.addEventListener("resize",()=>last&&update());
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",update);
+loads=P.of.map(([t,a])=>({id:uid++,t,a}));buildList();update();
+</script>
+</body>
+</html>
